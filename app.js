@@ -57,8 +57,18 @@ navItems.forEach(item => {
   });
 });
 
-const initialPage = window.location.hash.replace('#', '') || 'inicio';
+const navigationEntry = performance.getEntriesByType('navigation')[0];
+const isReload = navigationEntry?.type === 'reload';
+const initialPage = isReload ? 'inicio' : (window.location.hash.replace('#', '') || 'inicio');
 navigate(initialPage);
+
+if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(error => {
+      console.warn('No se pudo registrar el service worker:', error);
+    });
+  });
+}
 
 // ── RELOJ Y FECHA DINÁMICOS ───────────────────
 const MESES = [
