@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#050507"/>
+  <title>Informe Anual · Selección Operaciones · Las Tortuguitas Ninja</title>
+  <link rel="icon" href="../ninja.png"/>
+  <link rel="stylesheet" href="../styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+</head>
+<body data-page="informe-anual">
+
+<div class="layout">
+  <div id="sidebar-root"></div>
+
+  <main class="main">
+
+    <header class="page-head">
+      <div class="eyebrow">Equipo de selección · Informe anual</div>
+      <h1>Informe <span class="accent">Anual</span></h1>
+      <p class="sub">Cumplimiento semanal, volumen de altas, participación por capacitador y desempeño general del equipo de selección a lo largo del año.</p>
+    </header>
+
+    <!-- FILTROS -->
+    <div class="z-filters" id="z-filters">
+      <div class="z-filter-group">
+        <span class="z-filter-label">Mes</span>
+        <button class="z-btn active all" type="button" data-z-mes="Todos"   onclick="setMes('Todos')">Todos</button>
+        <button class="z-btn"            type="button" data-z-mes="Enero"   onclick="setMes('Enero')">Enero</button>
+        <button class="z-btn"            type="button" data-z-mes="Febrero" onclick="setMes('Febrero')">Febrero</button>
+        <button class="z-btn"            type="button" data-z-mes="Marzo"   onclick="setMes('Marzo')">Marzo</button>
+        <button class="z-btn"            type="button" data-z-mes="Abril"   onclick="setMes('Abril')">Abril</button>
+      </div>
+      <div class="z-filter-group">
+        <span class="z-filter-label">Capacitador</span>
+        <button class="z-btn active all" type="button" data-z-cap="Todos"    onclick="setCap('Todos')">Todos</button>
+        <button class="z-btn"            type="button" data-z-cap="Agustina" onclick="setCap('Agustina')">Agustina</button>
+        <button class="z-btn"            type="button" data-z-cap="Facundo"  onclick="setCap('Facundo')">Facundo</button>
+        <button class="z-btn"            type="button" data-z-cap="Emiliano" onclick="setCap('Emiliano')">Emiliano</button>
+        <button class="z-btn"            type="button" data-z-cap="Agustin"  onclick="setCap('Agustin')">Agustin</button>
+        <button class="z-btn"            type="button" data-z-cap="Mariano"  onclick="setCap('Mariano')">Mariano</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="z-kpis" id="z-kpis"></div>
+
+    <!-- CUMPLIMIENTO SEMANAL -->
+    <section class="z-card">
+      <div class="z-card-title">Cumplimiento semanal por capacitador</div>
+      <div class="z-card-sub">Promedio % enviados / total vacantes</div>
+      <div style="position:relative;height:240px"><canvas id="chartSemanal" role="img" aria-label="Cumplimiento semanal">Gráfico de cumplimiento semanal.</canvas></div>
+      <div id="legendSemanal" class="z-legend-row"></div>
+    </section>
+
+    <!-- EVOLUCIÓN -->
+    <section class="z-card">
+      <div class="z-card-title">Evolución semanal</div>
+      <div class="z-card-sub" id="subtituloEvolucion">Enviados · Vacantes · Faltantes</div>
+      <div style="position:relative;height:260px"><canvas id="chartEvolucion" role="img" aria-label="Evolución semanal">Gráfico de evolución semanal.</canvas></div>
+      <div id="legendEvolucion" class="z-legend-row" style="justify-content:center"></div>
+    </section>
+
+    <!-- MENSUAL + DONA -->
+    <div class="z-charts-grid">
+      <section class="z-card" style="margin-bottom:0">
+        <div class="z-card-title">Volumen mensual de altas</div>
+        <div class="z-card-sub">Ingresos confirmados por mes</div>
+        <div style="position:relative;height:210px"><canvas id="chartMensual" role="img" aria-label="Volumen mensual">Gráfico de volumen mensual.</canvas></div>
+        <div id="legendMensual" class="z-legend-row"></div>
+      </section>
+      <section class="z-card" style="margin-bottom:0">
+        <div class="z-card-title">Participación en envíos</div>
+        <div class="z-card-sub">Distribución % por capacitador</div>
+        <div style="position:relative;height:200px"><canvas id="chartDona" role="img" aria-label="Participación en envíos por capacitador">Gráfico de dona por capacitador.</canvas></div>
+        <div id="legendDona" class="z-legend-row" style="justify-content:center;margin-top:6px"></div>
+      </section>
+    </div>
+
+    <!-- MARCA -->
+    <section class="z-card">
+      <div class="z-card-title">Distribución por marca</div>
+      <div class="z-card-sub">Extremas vs Sabores</div>
+      <div style="position:relative;height:160px"><canvas id="chartMarca" role="img" aria-label="Distribución por marca">Gráfico de torta por marca.</canvas></div>
+      <div id="legendMarca" class="z-legend-row" style="justify-content:center"></div>
+    </section>
+
+    <!-- RANKING -->
+    <section class="z-card">
+      <div class="z-card-title">Ranking de capacitadores</div>
+      <div class="z-card-sub">Ordenado por cumplimiento general</div>
+      <div class="z-ranking" id="z-ranking"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="../app.js" defer></script>
+<script src="assets/data/informe-anual-app.js" defer></script>
+</body>
+</html>

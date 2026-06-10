@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#050507"/>
+  <title>Vacantes &amp; Seguimiento · Las Tortuguitas Ninja</title>
+  <link rel="icon" href="../ninja.png"/>
+  <link rel="stylesheet" href="../styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+</head>
+<body data-page="vacantes">
+
+<div class="layout">
+  <div id="sidebar-root"></div>
+
+  <main class="main">
+
+    <header class="page-head">
+      <div class="eyebrow">Equipo de selección · Seguimiento</div>
+      <h1>Vacantes &amp; <span class="accent">Ingresos</span></h1>
+      <p class="sub">Seguimiento de ingresos activos, cerrados y reportes de desempeño para Sabores Express y Hamburguesas Extremas.</p>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="seg-toolbar">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="openImport()">📥 Importar</button>
+      <button class="btn btn-excel btn-sm" type="button" onclick="exportExcel()">📊 Exportar Excel</button>
+      <button class="btn btn-week btn-sm" type="button" onclick="openWeekModal()">🏁 Finalizar Semana</button>
+      <span class="seg-toolbar-spacer"></span>
+      <button class="btn btn-primary btn-sm" type="button" onclick="openForm()">+ Nuevo Ingreso</button>
+    </div>
+
+    <!-- TABS -->
+    <div class="seg-tabs" role="tablist">
+      <button class="seg-tab tab-se active" type="button" onclick="goTab('ing-se',event)">🍊 Sabores Express <span class="tab-badge" id="badge-se">0</span></button>
+      <button class="seg-tab tab-he" type="button" onclick="goTab('ing-he',event)">🍔 Hamburguesas Extremas <span class="tab-badge" id="badge-he">0</span></button>
+      <button class="seg-tab" type="button" onclick="goTab('cerrados',event)">✅ Cerrados <span class="tab-badge" id="badge-cerrados">0</span></button>
+      <button class="seg-tab" type="button" onclick="goTab('dash',event)">📊 Dashboard</button>
+      <button class="seg-tab" type="button" onclick="goTab('reportes',event)">📈 Reportes</button>
+      <button class="seg-tab" type="button" onclick="goTab('desempeno',event)">🏅 Desempeño</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="seg-page" id="page-dash">
+      <div class="metrics" id="dash-metrics"></div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Estado de procesos</div>
+          <div class="chart-sub">Distribución actual por estado</div>
+          <div class="chart-wrap" style="height:240px"><canvas id="chartEstado"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Ingresos por capacitador</div>
+          <div class="chart-sub">Total de personas a cargo</div>
+          <div class="chart-wrap" style="height:240px"><canvas id="chartCap"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚠️ Alertas de demora <span style="font-size:12px;color:var(--text-muted);font-weight:400">(más de 10 días sin cerrar)</span></span>
+        </div>
+        <div id="dash-alertas"></div>
+      </div>
+    </section>
+
+    <!-- INGRESOS SABORES EXPRESS -->
+    <section class="seg-page active" id="page-ing-se">
+      <div class="seg-brand-strip">
+        <div class="seg-brand-dot" style="background:var(--seg-se)"></div>
+        <span class="seg-brand-name" style="color:var(--seg-se)">Sabores Express</span>
+        <span class="seg-brand-sub">Ingresos activos de la semana</span>
+      </div>
+      <div class="filters">
+        <input class="filter-input" type="text" id="search-se" placeholder="🔍 Buscar por nombre, local, zonal o edición..." oninput="renderTableSE()">
+        <select class="filter-select" id="filterCap-se" onchange="renderTableSE()"><option value="">Todos los capacitadores</option></select>
+        <select class="filter-select" id="filterStatus-se" onchange="renderTableSE()">
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="demorado">Demorado</option>
+          <option value="enviado">Enviado a Zonal</option>
+        </select>
+        <select class="filter-select" id="filterLocal-se" onchange="renderTableSE()"><option value="">Todos los locales</option></select>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" type="button" onclick="openForm('SE')">+ Nuevo Ingreso SE</button>
+      </div>
+      <div class="cap-legend">
+        <span class="legend-label">Capacitadores:</span>
+        <span class="legend-item"><span class="legend-dot ag"></span>Agustina</span>
+        <span class="legend-item"><span class="legend-dot au"></span>Agustin</span>
+        <span class="legend-item"><span class="legend-dot ma"></span>Mariano</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Edición</th><th>Capacitador</th><th>Regionales</th><th>Zonal</th><th>Local</th>
+            <th>L. Entrenamiento</th><th>Part</th><th>Full</th><th>Nombre</th><th>Apellido</th>
+            <th>F. Nacimiento</th><th>Nacionalidad</th><th>CUIL</th><th>Sexo</th>
+            <th>F. Ingreso</th><th>Dirección</th><th>CP</th><th>Localidad</th>
+            <th>Teléfono</th><th>Tel. Emergencia</th><th>Email</th>
+            <th>Altas RRHH</th><th>EMI</th><th>Estado</th><th>Días</th>
+            <th>Acciones</th><th>📋 / 📥</th>
+          </tr></thead>
+          <tbody id="tabla-body-se"></tbody>
+        </table>
+      </div>
+      <div id="tabla-empty-se" class="empty" style="display:none">
+        <div class="empty-icon">🍊</div>
+        <div class="empty-text">No hay ingresos de Sabores Express</div>
+        <div class="empty-sub">Hacé clic en "+ Nuevo Ingreso SE" para comenzar</div>
+      </div>
+    </section>
+
+    <!-- INGRESOS HAMBURGUESAS EXTREMAS -->
+    <section class="seg-page" id="page-ing-he">
+      <div class="seg-brand-strip">
+        <div class="seg-brand-dot" style="background:var(--seg-he)"></div>
+        <span class="seg-brand-name" style="color:var(--seg-he)">Hamburguesas Extremas</span>
+        <span class="seg-brand-sub">Ingresos activos de la semana</span>
+      </div>
+      <div class="filters">
+        <input class="filter-input" type="text" id="search-he" placeholder="🔍 Buscar por nombre, local, zonal o edición..." oninput="renderTableHE()">
+        <select class="filter-select" id="filterCap-he" onchange="renderTableHE()"><option value="">Todos los capacitadores</option></select>
+        <select class="filter-select" id="filterStatus-he" onchange="renderTableHE()">
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="cerrado">Cerrado</option>
+          <option value="demorado">Demorado</option>
+          <option value="enviado">Enviado a Zonal</option>
+        </select>
+        <select class="filter-select" id="filterLocal-he" onchange="renderTableHE()"><option value="">Todos los locales</option></select>
+        <span style="flex:1"></span>
+        <button class="btn btn-primary btn-sm" type="button" onclick="openForm('HE')">+ Nuevo Ingreso HE</button>
+      </div>
+      <div class="cap-legend">
+        <span class="legend-label">Capacitadores:</span>
+        <span class="legend-item"><span class="legend-dot ag"></span>Agustina</span>
+        <span class="legend-item"><span class="legend-dot au"></span>Agustin</span>
+        <span class="legend-item"><span class="legend-dot ma"></span>Mariano</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Edición</th><th>Capacitador</th><th>Regionales</th><th>Zonal</th><th>Local</th>
+            <th>L. Entrenamiento</th><th>Part</th><th>Full</th><th>Nombre</th><th>Apellido</th>
+            <th>F. Nacimiento</th><th>Nacionalidad</th><th>CUIL</th><th>Sexo</th>
+            <th>F. Ingreso</th><th>Dirección</th><th>CP</th><th>Localidad</th>
+            <th>Teléfono</th><th>Tel. Emergencia</th><th>Email</th>
+            <th>Altas RRHH</th><th>EMI</th><th>Estado</th><th>Días</th>
+            <th>Acciones</th><th>📋 / 📥</th>
+          </tr></thead>
+          <tbody id="tabla-body-he"></tbody>
+        </table>
+      </div>
+      <div id="tabla-empty-he" class="empty" style="display:none">
+        <div class="empty-icon">🍔</div>
+        <div class="empty-text">No hay ingresos de Hamburguesas Extremas</div>
+        <div class="empty-sub">Hacé clic en "+ Nuevo Ingreso HE" para comenzar</div>
+      </div>
+    </section>
+
+    <!-- CERRADOS -->
+    <section class="seg-page" id="page-cerrados">
+      <div class="seg-brand-strip">
+        <div class="seg-brand-dot" style="background:var(--seg-green)"></div>
+        <span class="seg-brand-name" style="color:var(--seg-green)">Procesos Cerrados</span>
+        <span class="seg-brand-sub">Historial de ingresos finalizados</span>
+      </div>
+      <div class="filters">
+        <input class="filter-input" type="text" id="search-cerrados" placeholder="🔍 Buscar por nombre, local, capacitador..." oninput="renderTableCerrados()">
+        <select class="filter-select" id="filterMarca-cerrados" onchange="renderTableCerrados()">
+          <option value="">Todas las marcas</option>
+          <option value="SE">🍊 Sabores Express</option>
+          <option value="HE">🍔 Hamburguesas Extremas</option>
+        </select>
+        <select class="filter-select" id="filterCap-cerrados" onchange="renderTableCerrados()"><option value="">Todos los capacitadores</option></select>
+        <span style="flex:1"></span>
+        <button class="btn btn-excel btn-sm" type="button" onclick="exportExcelCerrados()">📊 Exportar cerrados</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Marca</th><th>Edición</th><th>Capacitador</th><th>Zonal</th><th>Local</th>
+            <th>Nombre</th><th>Apellido</th><th>CUIL</th>
+            <th>F. Ingreso</th><th>F. Cierre</th><th>Días proceso</th>
+            <th>RRHH</th><th>EMI</th><th>Notas</th><th>Acciones</th>
+          </tr></thead>
+          <tbody id="tabla-body-cerrados"></tbody>
+        </table>
+      </div>
+      <div id="tabla-empty-cerrados" class="empty" style="display:none">
+        <div class="empty-icon">✅</div>
+        <div class="empty-text">No hay procesos cerrados todavía</div>
+        <div class="empty-sub">Los ingresos cerrados aparecerán aquí automáticamente</div>
+      </div>
+    </section>
+
+    <!-- REPORTES -->
+    <section class="seg-page" id="page-reportes">
+      <div class="rep-period-bar">
+        <div class="rep-period-tabs">
+          <button class="rep-ptab active" data-period="semana" type="button" onclick="setPeriod('semana',this)">📅 Esta semana</button>
+          <button class="rep-ptab" data-period="mes" type="button" onclick="setPeriod('mes',this)">🗓️ Este mes</button>
+          <button class="rep-ptab" data-period="anio" type="button" onclick="setPeriod('anio',this)">📆 Este año</button>
+          <button class="rep-ptab" data-period="total" type="button" onclick="setPeriod('total',this)">🗃️ Todo el tiempo</button>
+        </div>
+        <div class="rep-period-custom">
+          <input type="date" class="filter-input" id="rep-desde" style="min-width:140px" onchange="setPeriod('custom',null)">
+          <span style="font-size:13px;color:var(--text-muted)">→</span>
+          <input type="date" class="filter-input" id="rep-hasta" style="min-width:140px" onchange="setPeriod('custom',null)">
+          <select class="filter-select" id="rep-marca" onchange="renderReports()" style="min-width:160px">
+            <option value="">Todas las marcas</option>
+            <option value="SE">🍊 Sabores Express</option>
+            <option value="HE">🍔 Hamburguesas Extremas</option>
+          </select>
+        </div>
+      </div>
+      <div class="metrics" id="rep-metrics"></div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header">
+          <span class="card-title" id="rep-resumen-titulo">📋 Resumen del período</span>
+          <button class="btn btn-excel btn-sm" type="button" onclick="exportReportePeriodo()">📊 Exportar período</button>
+        </div>
+        <div id="rep-resumen-tabla"></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Ingresos por semana</div>
+          <div class="chart-sub" id="chart-evol-sub">Evolución de ingresos y cierres</div>
+          <div class="chart-wrap" style="height:260px"><canvas id="chartEvol"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Ingresos por capacitador</div>
+          <div class="chart-sub">Distribución en el período</div>
+          <div class="chart-wrap" style="height:260px"><canvas id="chartCapPeriodo"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Top locales</div>
+          <div class="chart-sub">Locales con más ingresos en el período</div>
+          <div class="chart-wrap" style="height:280px"><canvas id="chartLocal"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribución Part / Full</div>
+          <div class="chart-sub">Tipo de rotación en el período</div>
+          <div class="chart-wrap" style="height:280px"><canvas id="chartTipo"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Ingresos por regional</div>
+          <div class="chart-sub">Distribución por zona regional</div>
+          <div class="chart-wrap" style="height:260px"><canvas id="chartRegional"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Días promedio hasta cierre por capacitador</div>
+          <div class="chart-sub">Solo procesos cerrados en el período</div>
+          <div class="chart-wrap" style="height:260px"><canvas id="chartDemora"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DESEMPEÑO -->
+    <section class="seg-page" id="page-desempeno">
+      <div class="filters" style="margin-bottom:20px">
+        <label style="font-size:13px;color:var(--text-dim);font-weight:500;align-self:center">Ordenar por:</label>
+        <select class="filter-select" id="sortPerf" onchange="renderPerf()">
+          <option value="total">Total ingresos</option>
+          <option value="cerrados">Cerrados</option>
+          <option value="demora">Menor demora</option>
+        </select>
+      </div>
+      <div class="perf-grid" id="perf-grid"></div>
+      <div id="perf-empty" class="empty" style="display:none">
+        <div class="empty-icon">🏅</div>
+        <div class="empty-text">Sin datos de desempeño</div>
+        <div class="empty-sub">Cargá ingresos para ver el resumen</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- FORM MODAL -->
+<div class="form-overlay" id="form-overlay">
+  <div class="form-modal">
+    <div class="form-title">✦ <span id="form-titulo">Nuevo Ingreso</span></div>
+    <div class="form-grid">
+      <div class="form-section">Marca</div>
+      <div class="form-group full">
+        <label class="form-label">Marca *</label>
+        <select class="form-control" id="f-marca">
+          <option value="SE">🍊 Sabores Express</option>
+          <option value="HE">🍔 Hamburguesas Extremas</option>
+        </select>
+      </div>
+
+      <div class="form-section">Asignación</div>
+      <div class="form-group full">
+        <label class="form-label">Edición / Vacante</label>
+        <input class="form-control" id="f-edicion" type="text" placeholder="Ej: Edición 1, Vacante Mañana...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Capacitador *</label>
+        <input class="form-control" id="f-cap" type="text" placeholder="Nombre capacitador" list="list-cap">
+        <datalist id="list-cap"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Regionales</label>
+        <input class="form-control" id="f-regional" type="text" placeholder="Nombre regional" list="list-reg">
+        <datalist id="list-reg"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Zonal</label>
+        <input class="form-control" id="f-zonal" type="text" placeholder="Nombre zonal" list="list-zon">
+        <datalist id="list-zon"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Local</label>
+        <input class="form-control" id="f-local" type="text" placeholder="Nombre del local" list="list-loc">
+        <datalist id="list-loc"></datalist>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Local de entrenamiento</label>
+        <input class="form-control" id="f-lent" type="text" placeholder="Local donde se capacita">
+      </div>
+      <div class="form-group">
+        <label class="form-label">PART</label>
+        <select class="form-control" id="f-part">
+          <option value="">— Ninguno —</option>
+          <option>PART ROTA</option><option>ROTA NOCHE</option><option>PART</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">FULL</label>
+        <select class="form-control" id="f-full">
+          <option value="">— Ninguno —</option>
+          <option>FULL ROTA</option><option>ETN</option><option>ET</option><option>GT</option><option>ETR</option><option>FULL</option>
+        </select>
+      </div>
+
+      <div class="form-section">Datos del empleado</div>
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-control" id="f-nombre" type="text" placeholder="Nombre"></div>
+      <div class="form-group"><label class="form-label">Apellido *</label><input class="form-control" id="f-apellido" type="text" placeholder="Apellido"></div>
+      <div class="form-group"><label class="form-label">Fecha de nacimiento (DD/MM/AAAA)</label><input class="form-control" id="f-nacimiento" type="text" placeholder="DD/MM/AAAA"></div>
+      <div class="form-group"><label class="form-label">Nacionalidad</label><input class="form-control" id="f-nacionalidad" type="text" placeholder="Ej: Argentina"></div>
+      <div class="form-group"><label class="form-label">CUIL</label><input class="form-control" id="f-cuil" type="text" placeholder="XX-XXXXXXXX-X"></div>
+      <div class="form-group">
+        <label class="form-label">Sexo (DNI)</label>
+        <select class="form-control" id="f-sexo">
+          <option value="">— Seleccionar —</option>
+          <option>M</option><option>F</option><option>X</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Fecha de ingreso *</label><input class="form-control" id="f-fecha" type="date"></div>
+      <div class="form-group"><label class="form-label">Dirección completa</label><input class="form-control" id="f-direccion" type="text" placeholder="Calle, número, piso..."></div>
+      <div class="form-group"><label class="form-label">CP</label><input class="form-control" id="f-cp" type="text" placeholder="Código postal"></div>
+      <div class="form-group"><label class="form-label">Localidad</label><input class="form-control" id="f-localidad" type="text" placeholder="Ciudad / localidad"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-control" id="f-telefono" type="text" placeholder="Número de contacto"></div>
+      <div class="form-group"><label class="form-label">Teléfono emergencia</label><input class="form-control" id="f-telemer" type="text" placeholder="Contacto de emergencia"></div>
+      <div class="form-group full"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" placeholder="correo@ejemplo.com"></div>
+
+      <div class="form-section">RRHH &amp; Documentación</div>
+      <div class="form-group">
+        <label class="form-label">Altas RRHH</label>
+        <select class="form-control" id="f-altasrrhh"><option value="">— —</option><option>Sí</option><option>No</option><option>Pendiente</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Planilla EMI</label>
+        <select class="form-control" id="f-emi"><option value="">— —</option><option>Sí</option><option>No</option><option>Pendiente</option></select>
+      </div>
+
+      <div class="form-section">Estado</div>
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-control" id="f-estado">
+          <option value="activo">Activo</option>
+          <option value="enviado">Enviado a Zonal</option>
+          <option value="demorado">Demorado</option>
+          <option value="cerrado">Cerrado</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Fecha cierre</label><input class="form-control" id="f-cierre" type="date"></div>
+      <div class="form-group full"><label class="form-label">Notas</label><textarea class="form-control" id="f-notas" rows="2" placeholder="Observaciones..."></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" type="button" onclick="saveIngreso()">Guardar ingreso</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEK SUMMARY MODAL -->
+<div class="week-overlay" id="week-overlay">
+  <div class="week-modal">
+    <div class="week-modal-title">🏁 Finalizar Semana</div>
+    <div class="week-modal-sub" id="week-subtitle">Resumen de la semana en curso.</div>
+    <div class="week-summary-grid" id="week-summary-grid"></div>
+    <div class="week-table-wrap">
+      <table>
+        <thead><tr><th>Nombre</th><th>Apellido</th><th>Marca</th><th>Capacitador</th><th>Local</th><th>F. Ingreso</th><th>F. Cierre</th></tr></thead>
+        <tbody id="week-table-body"></tbody>
+      </table>
+    </div>
+    <div id="week-no-closed" style="display:none;text-align:center;padding:28px;color:var(--text-muted);font-size:13px">
+      <div style="font-size:36px;margin-bottom:8px">📋</div>
+      No hay ingresos cerrados para archivar esta semana.
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeWeekModal()">Cancelar</button>
+      <button class="btn btn-week btn-sm" id="week-confirm-btn" type="button" onclick="confirmFinalizarSemana()">✅ Confirmar y archivar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="form-overlay" id="import-overlay">
+  <div class="form-modal" style="max-width:520px">
+    <div class="form-title">📥 Importar desde Excel / CSV</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+      Pegá el contenido copiado del Excel (columnas separadas por tabulación o coma).<br>
+      Columnas esperadas: <strong>Capacitador, Regionales, Zonal, Local, L. Entrenamiento, Part, Full, Nombre, Apellido</strong>
+    </p>
+    <textarea class="form-control" id="import-text" rows="10" placeholder="Pegá aquí los datos del Excel..." style="font-family:ui-monospace,monospace;font-size:12px"></textarea>
+    <div class="form-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeImport()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" type="button" onclick="processImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-modal">
+    <div style="font-size:36px;margin-bottom:10px" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Confirmar acción</h3>
+    <p id="confirm-msg">¿Estás seguro?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger-soft btn-sm" id="confirm-btn" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- COPY MODAL -->
+<div class="copy-overlay" id="copy-overlay">
+  <div class="copy-modal">
+    <div class="copy-modal-title">📋 <span>Datos del postulante</span></div>
+    <div class="copy-modal-sub">Podés editar el texto antes de copiar.</div>
+    <textarea class="copy-textarea" id="copy-textarea" spellcheck="false"></textarea>
+    <div class="copy-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeCopyModal()">Cerrar</button>
+      <button class="btn btn-primary btn-sm" id="copy-btn" type="button" onclick="doCopy()">📋 Copiar al portapapeles</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASTE MODAL -->
+<div class="paste-overlay" id="paste-overlay">
+  <div class="paste-modal">
+    <div class="paste-modal-title">📥 Pegar datos desde Excel</div>
+    <div class="paste-modal-sub">Copiá la fila del postulante (Ctrl+C) y pegala acá abajo.</div>
+    <div class="paste-hint">
+      <b>Columnas esperadas (en orden):</b><br>
+      Nombre · Apellido · Fecha nacimiento · Nacionalidad · CUIL · Sexo · Fecha Ingreso · Dirección<br>
+      <span style="color:var(--text-muted)">También acepta Localidad, Teléfono, Email, etc.</span>
+    </div>
+    <textarea class="paste-textarea" id="paste-textarea" placeholder="Pegá aquí con Ctrl+V..." oninput="previewPaste()" onpaste="setTimeout(previewPaste,50)"></textarea>
+    <div class="paste-preview" id="paste-preview">
+      <div class="paste-preview-title">✅ Datos detectados — revisá antes de confirmar</div>
+      <div class="paste-preview-grid" id="paste-preview-grid"></div>
+    </div>
+    <div class="paste-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closePasteModal()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" id="paste-confirm-btn" type="button" style="display:none" onclick="confirmPaste()">✅ Aplicar datos</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="../app.js" defer></script>
+<script src="vacantes-app.js" defer></script>
+</body>
+</html>
