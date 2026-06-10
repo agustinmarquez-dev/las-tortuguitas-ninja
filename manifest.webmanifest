@@ -1,0 +1,31 @@
+{
+  "name": "Las Tortuguitas Ninja",
+  "short_name": "Tortuguitas",
+  "description": "Dashboard de gestión y análisis del equipo de Selección y RRHH.",
+  "start_url": "./index.html#inicio",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F7FB",
+  "theme_color": "#071B34",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/icons/turtle-circle-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icons/turtle-circle-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icons/turtle-circle-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
