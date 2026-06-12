@@ -406,18 +406,65 @@ function parseCSV(text) {
   const sabores = [], extremas = [];
   let section = null;
 
+  const parsePendientes = value => {
+    const clean = String(value || '').replace(/[^\d-]/g, '');
+    const parsed = parseInt(clean, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const cleanLocal = value => String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
+
+  const isSkippableLocal = value => {
+    const local = cleanLocal(value);
+    return (
+      !local ||
+      local.includes('LOCAL') ||
+      local.includes(':-') ||
+      local.includes('▼') ||
+      local.includes('▶') ||
+      local.includes('TOTAL') ||
+      local.includes('CAPACITADOR') ||
+      local.includes('CONTADOR') ||
+      local.includes('PENDIENTES') ||
+      local.includes('CUBIERTAS') ||
+      local.includes('ACTUALIZADO') ||
+      local.includes('RESUMEN')
+    );
+  };
+
   for (const row of rows) {
-    const first = (row[0] || '').toUpperCase();
-    if (!first || first.includes('LOCAL') || first.includes(':-') || first.includes('▼') || first.includes('TOTAL') || first.includes('CAPACITADOR')) continue;
+    const first = cleanLocal(row[0]);
+    const rightLocal = cleanLocal(row[10]);
+
+    if (first.includes('RESUMEN POR CAPACITADOR') || first === 'CAPACITADOR') {
+      break;
+    }
 
     // Detectar encabezado de sección
     if (first.includes('SABORES') || first.includes('🥐')) { section = 'sabores'; continue; }
     if (first.includes('HAMBURGUESAS') || first.includes('EXTREMAS') || first.includes('🍔')) { section = 'extremas'; continue; }
 
-    const pendientes = parseInt(row[2], 10);
-    if (isNaN(pendientes) || pendientes <= 0) continue;
-    const nombre = first.replace(/\s+/g,' ').trim();
-    const entry = { n: nombre, p: pendientes };
+    // Formato real de Resumen: Sabores a la izquierda, Extremas a la derecha.
+    if (row.length >= 13) {
+      const leftPendientes = parsePendientes(row[2]);
+      const rightPendientes = parsePendientes(row[12]);
+
+      if (!isSkippableLocal(first) && leftPendientes > 0) {
+        sabores.push({ n: first, p: leftPendientes });
+      }
+
+      if (!isSkippableLocal(rightLocal) && rightPendientes > 0) {
+        extremas.push({ n: rightLocal, p: rightPendientes });
+      }
+
+      continue;
+    }
+
+    if (isSkippableLocal(first)) continue;
+
+    const pendientes = parsePendientes(row[2]);
+    if (pendientes <= 0) continue;
+    const entry = { n: first, p: pendientes };
     if (section === 'extremas') extremas.push(entry);
     else sabores.push(entry);
   }
