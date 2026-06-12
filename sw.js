@@ -1,4 +1,4 @@
-const CACHE_NAME = 'las-tortuguitas-ninja-v1';
+const CACHE_NAME = 'las-tortuguitas-ninja-v4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,10 +6,14 @@ const APP_SHELL = [
   './app.js',
   './informe-anual-app.js',
   './manifest.webmanifest',
+  './pages/mapa-calor.html',
   './assets/images/turtle-circle-logo.png',
   './assets/icons/turtle-circle-logo-192.png',
   './assets/icons/turtle-circle-logo-512.png',
-  './assets/data/zonales-data.js'
+  './assets/data/zonales-data.js',
+  './assets/data/vacantes-resumen.csv',
+  './assets/data/vacantes-resumen-data.js',
+  './assets/data/README-vacantes.md'
 ];
 
 self.addEventListener('install', event => {
