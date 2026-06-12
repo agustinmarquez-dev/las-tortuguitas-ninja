@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "actualizar-vacantes": "node scripts/actualizar-vacantes.js"
+  }
+}
