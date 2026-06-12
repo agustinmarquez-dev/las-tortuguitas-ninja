@@ -51,8 +51,9 @@ function navigate(pageId) {
 
 navItems.forEach(item => {
   item.addEventListener('click', e => {
-    e.preventDefault();
     const page = item.dataset.page;
+    if (!page) return;
+    e.preventDefault();
     if (page) navigate(page);
   });
 });
