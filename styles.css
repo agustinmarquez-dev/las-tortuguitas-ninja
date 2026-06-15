@@ -538,6 +538,47 @@ body {
   flex-shrink: 0;
 }
 
+.jotform-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.jotform-card-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.jotform-card-head h3 {
+  color: var(--navy);
+  font-size: 1.2rem;
+  letter-spacing: -.03em;
+}
+
+.jotform-card-head p {
+  color: var(--text-mid);
+  font-size: .86rem;
+  margin-top: 4px;
+}
+
+.jotform-embed {
+  min-height: 720px;
+  background: var(--white);
+}
+
+.jotform-embed iframe {
+  width: 100% !important;
+  max-width: 100%;
+  border: 0;
+  display: block;
+}
+
 .charts-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1309,6 +1350,8 @@ body {
   .zonal-brand { flex: 1; justify-content: center; padding-left: 10px; padding-right: 10px; }
   .zonales-results { grid-template-columns: 1fr; }
   .zonal-card-grid { grid-template-columns: 1fr; }
+  .jotform-card-head { flex-direction: column; }
+  .jotform-embed { min-height: 820px; }
   .table-header-row { grid-template-columns: 2fr 1fr 1fr; }
   .table-header-row span:nth-child(4),
   .table-header-row span:nth-child(5) { display: none; }
