@@ -1,517 +1,669 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Dashboard de gestión y análisis del equipo de Selección y RRHH de Las Tortuguitas Ninja." />
-  <meta name="theme-color" content="#071B34" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Tortuguitas" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta property="og:title" content="Las Tortuguitas Ninja">
-  <meta property="og:description" content="Dashboard de gestión y análisis.">
-  <meta property="og:image" content="./assets/images/og.image.webp">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Las Tortuguitas Ninja">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Las Tortuguitas Ninja">
-  <meta name="twitter:description" content="Dashboard de gestión y análisis del equipo de Selección y RRHH.">
-  <meta name="twitter:image" content="./assets/images/og.image.webp">
-  <title>Las Tortuguitas Ninja</title>
-  <link rel="icon" type="image/png" href="./assets/images/turtle-circle-logo.png">
-  <link rel="apple-touch-icon" href="./assets/icons/turtle-circle-logo-192.png">
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mapa de Calor — Vacantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="icon" type="image/png" href="../assets/images/turtle-circle-logo.png"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#F5F7FB;
+    --navy:#071B34;
+    --navy-mid:#0D2748;
+    --electric:#2563EB;
+    --text:#0F172A;
+    --text-mid:#475569;
+    --text-soft:#94A3B8;
+    --white:#FFFFFF;
+    --border:#E2E8F0;
+    --shadow-sm:0 1px 4px rgba(0,0,0,.06);
+    --shadow-md:0 4px 20px rgba(0,0,0,.08);
+    --radius:20px;
+    --radius-sm:12px;
+    --sidebar-w:220px;
+  }
+  html, body { height: 100%; font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); }
 
+  .layout { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w); background: linear-gradient(160deg, var(--navy) 0%, var(--navy-mid) 60%, #0B2340 100%); flex-shrink: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .sidebar-brand {
+    padding: 28px 20px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    text-align: center;
+  }
+  .brand-logo { width:48px; height:48px; object-fit:contain; }
+  .brand-name { color: var(--white); font-size: .95rem; font-weight: 700; line-height: 1.3; }
+  .brand-sub  { color: rgba(255,255,255,0.45); font-size: .72rem; margin-top: 2px; }
+  nav { display: flex; flex-direction: column; gap: 4px; padding: 20px 14px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-radius: var(--radius-sm);
+    color: rgba(255,255,255,0.55); font-size: .88rem; font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    transition: all .2s ease;
+  }
+  .nav-item:hover  { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: var(--electric); color: var(--white); box-shadow: 0 4px 20px rgba(37,99,235,.35); }
+  .nav-item svg    { width: 18px; height: 18px; flex-shrink: 0; }
+  .sidebar-footer { display:flex; align-items:center; gap:8px; padding:20px 18px; border-top:1px solid rgba(255,255,255,.07); color:rgba(255,255,255,.3); font-size:.72rem; }
+  .sidebar-footer svg { width:16px; height:16px; flex-shrink:0; }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .topbar {
+    background: var(--white); padding: 20px 36px;
+    border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); flex-shrink: 0;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+  .topbar-left {}
+  .page-label { font-size: .78rem; color: var(--electric); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+  .page-title { font-size: 1.85rem; font-weight: 700; color: var(--navy); letter-spacing: -.03em; line-height: 1.1; margin: 4px 0 12px; }
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    padding: 7px 14px; border-radius: 99px; font-size: .8rem; font-weight: 700;
+    border: 1px solid var(--border); background: var(--white);
+    cursor: pointer; color: var(--text-mid); transition: all .15s;
+  }
+  .pill:hover  { border-color: var(--electric); color: var(--electric); }
+  .pill.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+  .badge-update {
+    font-size: .78rem; color: var(--text-mid); white-space: nowrap;
+    display: flex; align-items: center; gap: 7px; margin-top: 4px;
+    background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; box-shadow: var(--shadow-sm);
+  }
+  .badge-update span { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; }
+
+  /* ── Map ── */
+  .map-shell {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+  }
+  #map {
+    flex: 1;
+    min-height: 420px;
+    width: 100%;
+  }
+
+  /* ── Stats bar ── */
+  .statsbar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--white); border-top: 1px solid var(--border); flex-shrink: 0;
+  }
+  .stat { padding: 14px 20px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-label { font-size: .7rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+  .stat-val { font-size: 1.75rem; font-weight: 700; color: var(--text); letter-spacing: -.04em; }
+  .stat-val.red { color: #dc2626; }
+
+  /* ── Loading overlay ── */
+  #loading {
+    position: absolute; inset: 0; background: rgba(255,255,255,.86);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1000; gap: 10px; font-size: 13px; color: #6b7280;
+  }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid #e5e7eb;
+    border-top-color: #1d4ed8; border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Legend ── */
+  .legend {
+    position: absolute; bottom: 18px; right: 18px; z-index: 500;
+    background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; font-size: .78rem; color: var(--text-mid); min-width: 160px; box-shadow: var(--shadow-md);
+  }
+  .legend-title { font-weight: 700; color: var(--navy); margin-bottom: 6px; font-size: .82rem; }
+  .legend-bar {
+    display: flex; height: 8px; border-radius: 4px; overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .legend-bar span { flex: 1; }
+  .legend-ends { display: flex; justify-content: space-between; font-size: .68rem; margin-bottom: 8px; }
+  .legend-items { display: flex; flex-direction: column; gap: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: .72rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px #ccc; flex-shrink: 0; }
+
+  @media (max-width: 768px) {
+    .layout { flex-direction: column; overflow: auto; }
+    .sidebar { position: relative; width: 100%; flex-direction: column; }
+    .sidebar-brand { flex-direction: row; justify-content: center; padding: 14px 16px; }
+    .brand-logo { width: 38px; height: 38px; }
+    nav { flex-direction: row; overflow-x: auto; padding: 10px 12px; }
+    .nav-item { white-space: nowrap; }
+    .sidebar-footer { display: none; }
+    .main { min-height: calc(100vh - 126px); }
+    .map-shell { min-height: 560px; }
+    .topbar { padding: 16px; }
+    .page-title { font-size: 1.4rem; }
+    .statsbar { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(2) { border-right: none; }
+    .legend { left: 12px; right: 12px; bottom: 12px; }
+  }
+</style>
 </head>
 <body>
 
-  <!-- HAMBURGER BTN (mobile) -->
-  <button class="hamburger" id="hamburger" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
+<div class="layout">
 
-  <!-- OVERLAY (mobile) -->
-  <div class="overlay" id="overlay" aria-hidden="true"></div>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar" aria-label="Navegación principal">
-    <div class="sidebar-top">
-      <div class="sidebar-logo">
-        <!-- Logo principal del dashboard -->
-        <img
-          src="./assets/images/turtle-circle-logo.png"
-          alt="Las Tortuguitas Ninja"
-          class="logo-icon"
-          width="48"
-          height="48"
-          decoding="async" />
-        <div class="sidebar-brand">
-          <span class="brand-name">Las Tortuguitas Ninja</span>
-          <span class="brand-sub">Equipo de Selección y RRHH</span>
-        </div>
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div>
+      <div class="sidebar-brand">
+        <img src="../assets/images/turtle-circle-logo.png" alt="Las Tortuguitas Ninja" class="brand-logo" width="48" height="48"/>
+        <div class="brand-name">Las Tortuguitas Ninja </div>
+        <div class="brand-sub">Equipo de Selección y RRHH</div>
       </div>
-
-      <nav class="sidebar-nav" aria-label="Secciones del dashboard">
-        <a href="#inicio" class="nav-item active" data-page="inicio" aria-current="page">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <nav>
+        <a class="nav-item" href="../index.html#inicio">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
           Inicio
         </a>
-        <a href="#herramientas" class="nav-item" data-page="herramientas">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <a class="nav-item" href="../index.html#herramientas">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
           Herramientas
         </a>
-        <a href="#vacantes" class="nav-item" data-page="vacantes">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        <a class="nav-item" href="../index.html#vacantes">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
           Vacantes
         </a>
-        <a href="#confirmacion" class="nav-item" data-page="confirmacion">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <a class="nav-item" href="../index.html#confirmacion">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
           Confirmación
         </a>
-        <a href="#informe" class="nav-item" data-page="informe">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <a class="nav-item" href="../index.html#informe">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           Informe Anual
         </a>
-        <a href="#zonales" class="nav-item" data-page="zonales">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        <a class="nav-item" href="../index.html#zonales">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
           Zonales
         </a>
-        <a href="./pages/mapa-calor.html" class="nav-item">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4.1 12 6 9.9 4.1a5 5 0 0 0-7 7.1L12 20l9.1-8.8a5 5 0 0 0-7.1-7.1z"/><path d="M12 6v14"/><path d="M7.5 15.5h9"/></svg>
+        <a class="nav-item active" href="mapa-calor.html">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M14 4.1 12 6 9.9 4.1a5 5 0 0 0-7 7.1L12 20l9.1-8.8a5 5 0 0 0-7.1-7.1z"/><path d="M12 6v14"/><path d="M7.5 15.5h9"/></svg>
           Mapa de calor
         </a>
       </nav>
     </div>
-
     <div class="sidebar-footer">
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="footer-icon"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       <span>Las Tortuguitas Ninja © 2026</span>
     </div>
-  </aside>
+  </div>
 
-  <!-- MAIN -->
-  <div class="main-wrapper">
+  <!-- Main -->
+  <div class="main">
 
-    <!-- TOPBAR -->
-    <header class="topbar">
+    <div class="topbar">
       <div class="topbar-left">
-        <span class="topbar-sub">Equipo de Selección y RRHH</span>
-        <h1 class="topbar-title">Las <span class="accent">Tortuguitas</span> Ninja</h1>
-      </div>
-      <div class="topbar-right">
-        <div class="datetime-block">
-          <div class="date-line">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span id="current-date"></span>
-          </div>
-          <div class="time-line">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-            <span id="current-time"></span>
-          </div>
-        </div>
-        <div class="topbar-stats">
-          <div class="stat-chip">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            <div>
-              <strong>43</strong>
-              <span>Zonales</span>
-            </div>
-          </div>
-          <div class="stat-chip">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-            <div>
-              <strong>193</strong>
-              <span>Locales</span>
-            </div>
-          </div>
-          <div class="stat-chip">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
-            <div>
-              <strong>5</strong>
-              <span>Referentes</span>
-            </div>
-          </div>
+        <div class="page-label">Equipo de Selección y RRHH</div>
+        <div class="page-title">Mapa de calor — Vacantes pendientes</div>
+        <div class="pills">
+          <button class="pill active" data-f="todas">Todas</button>
+          <button class="pill" data-f="sabores">Sabores Express</button>
+          <button class="pill" data-f="extremas">Extremas</button>
+          <button class="pill" data-f="criticas">Solo críticas (5+)</button>
         </div>
       </div>
-    </header>
+      <div class="badge-update" id="dataSourceBadge">
+        <span></span> Cargando origen de datos
+      </div>
+    </div>
 
-    <!-- CONTENT -->
-    <main class="content">
+    <div class="map-shell">
+      <div id="map"></div>
+      <div id="loading"><div class="spinner"></div>Cargando vacantes...</div>
 
-      <!-- INICIO -->
-      <section class="page active" id="page-inicio" aria-labelledby="inicio-title">
-        <div class="section-header">
-          <h2 id="inicio-title">Nuestro Equipo</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Las personas que hacen posible la operación del equipo cada día.</p>
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-title">Vacantes pendientes</div>
+        <div class="legend-bar">
+          <span style="background:#dbeafe"></span>
+          <span style="background:#93c5fd"></span>
+          <span style="background:#3b82f6"></span>
+          <span style="background:#1d4ed8"></span>
+          <span style="background:#7c1d1d"></span>
         </div>
-        <div class="team-grid">
-
-          <div class="team-card">
-            <div class="online-dot"></div>
-            <div class="avatar-wrap">
-              <img src="./assets/images/team/kevin-garcia.jpg" alt="Kevin García" width="88" height="88" loading="lazy" decoding="async">
-            </div>
-            <h3>Kevin García</h3>
-            <span class="badge badge-blue">Visionario</span>
-          </div>
-
-          <div class="team-card">
-            <div class="online-dot"></div>
-            <div class="avatar-wrap">
-              <img src="./assets/images/team/emiliano-pravato.jpg" alt="Emiliano Pravato" width="88" height="88" loading="lazy" decoding="async">
-            </div>
-            <h3>Emiliano Pravato</h3>
-            <span class="badge badge-green">Genuino</span>
-          </div>
-
-          <div class="team-card">
-            <div class="online-dot"></div>
-            <div class="avatar-wrap">
-              <img src="./assets/images/team/agustina-castillo.jpg" alt="Agustina Castillo" width="88" height="88" loading="lazy" decoding="async">
-            </div>
-            <h3>Agustina Castillo</h3>
-            <span class="badge badge-purple">Incondicional</span>
-          </div>
-
-          <div class="team-card">
-            <div class="online-dot"></div>
-            <div class="avatar-wrap">
-              <img src="./assets/images/team/agustin-marquez.jpg" alt="Agustín Marquez" width="88" height="88" loading="lazy" decoding="async">
-            </div>
-            <h3>Agustín Marquez</h3>
-            <span class="badge badge-orange">Perfeccionista</span>
-          </div>
-
-          <div class="team-card">
-            <div class="online-dot"></div>
-            <div class="avatar-wrap">
-              <img src="./assets/images/team/mariano-nussbaum.jpg" alt="Mariano Nussbaum" width="88" height="88" loading="lazy" decoding="async">
-            </div>
-            <h3>Mariano Nussbaum</h3>
-            <span class="badge badge-blue">Potencial</span>
-          </div>
-
+        <div class="legend-ends"><span>1</span><span>15+</span></div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="dot" style="background:#1d4ed8"></div>Sabores Express</div>
+          <div class="legend-item"><div class="dot" style="background:#ea580c"></div>Hamburguesas Extremas</div>
+          <div class="legend-item"><div class="dot" style="background:#dc2626; border-color:#dc2626"></div>Crítico (5+)</div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- HERRAMIENTAS -->
-      <section class="page" id="page-herramientas" aria-labelledby="herramientas-title" hidden>
-        <div class="section-header">
-          <h2 id="herramientas-title">Herramientas</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Accesos rápidos y recursos del equipo.</p>
-        </div>
+    <div class="statsbar">
+      <div class="stat">
+        <div class="stat-label">Vacantes pendientes</div>
+        <div class="stat-val red" id="sVac">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Locales con búsqueda</div>
+        <div class="stat-val" id="sLoc">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Sabores pendientes</div>
+        <div class="stat-val" id="sSab">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Extremas pendientes</div>
+        <div class="stat-val" id="sExt">—</div>
+      </div>
+    </div>
 
-        <a href="https://linktr.ee/capacitaciones_seleccion" target="_blank" rel="noopener noreferrer" class="hero-tool-card">
-          <div class="hero-tool-icon">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-          </div>
-          <div class="hero-tool-text">
-            <strong>Capacitaciones — Linktree</strong>
-            <span>linktr.ee/capacitaciones_seleccion</span>
-          </div>
-          <div class="hero-tool-arrow">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg>
-          </div>
-        </a>
+  </div>
+</div>
 
-        <div class="tools-grid">
-          <a
-            href="https://docs.google.com/spreadsheets/d/1YhOjO2nACt7WLHuOF5JShQA-AUlYvmkdULdgi4MwPRM/edit?gid=1037172765#gid=1037172765"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="tool-card">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-              <path d="M6 3h9l4 4v14H6z" fill="#0F9D58"/>
-              <path d="M15 3v4h4z" fill="#87D7A8"/>
-              <path d="M8.5 11h8M8.5 15h8M8.5 19h8M12 11v8M16.5 11v8" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-            <span>Tareas Grupales</span>
-            <small>Google Sheets</small>
-          </a>
-          <div class="tool-card coming">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
-            <span>Formularios</span>
-            <small>Próximamente</small>
-          </div>
-          <div class="tool-card coming">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-            <span>Documentos</span>
-            <small>Próximamente</small>
-          </div>
-          <div class="tool-card coming">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span>Calendario</span>
-            <small>Próximamente</small>
-          </div>
-          <div class="tool-card coming">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            <span>Base de Datos</span>
-            <small>Próximamente</small>
-          </div>
-        </div>
-      </section>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="../assets/data/vacantes-resumen-data.js"></script>
+<script>
 
-      <!-- VACANTES -->
-      <section class="page" id="page-vacantes" aria-labelledby="vacantes-title" hidden>
-        <div class="section-header">
-          <h2 id="vacantes-title">Vacantes</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Vista previa de la hoja Resumen del seguimiento grupal.</p>
-        </div>
+// ── Coordenadas por local ──────────────────────────────────────────────────
+// Clave: nombre en mayúsculas tal como aparece en el sheet
+const COORDS = {
+  // SABORES
+  'SAAVEDRA':           [-34.5470,-58.4889],
+  'SANTA FE':           [-34.5950,-58.3980],
+  'APER MARTINEZ':      [-34.4900,-58.7100],
+  'TRISTAN SUAREZ':     [-34.8620,-58.5230],
+  'ESCOBAR':            [-34.3490,-58.7960],
+  'LINIERS 1':          [-34.6388,-58.5200],
+  'OLIVOS':             [-34.5100,-58.4960],
+  'LAVALLE 1':          [-34.6022,-58.3850],
+  'PACHECO 2':          [-34.4480,-58.6550],
+  'BELGRANO':           [-34.5597,-58.4574],
+  'CORRIENTES 4':       [-34.6044,-58.4155],
+  'BALLESTER 2':        [-34.5345,-58.5492],
+  'PELLEGRINI':         [-34.6058,-58.3794],
+  'URQUIZA':            [-34.5820,-58.4890],
+  'CORRIENTES 3':       [-34.6042,-58.4120],
+  'SAN ISDIRO 2':       [-34.4700,-58.5060],
+  'SAN ISIDRO 1':       [-34.4720,-58.5280],
+  'SAN ISIDRO 2':       [-34.4700,-58.5060],
+  'BOULOGNE':           [-34.4960,-58.5580],
+  'APER CONSTITUCION':  [-34.6280,-58.3800],
+  'LOMA HERMOSA':       [-34.5620,-58.5540],
+  'POMPEYA':            [-34.6492,-58.4096],
+  'VIRREYES':           [-34.4370,-58.5720],
+  'QUILMES 1':          [-34.7210,-58.2570],
+  'TAPIALES':           [-34.6740,-58.5230],
+  'CRUCE VARELA':       [-34.8160,-58.2770],
+  'GERLI':              [-34.6900,-58.3700],
+  'LEZAMA':             [-36.0610,-57.3670],
+  'SAN FERNANDO':       [-34.4440,-58.5590],
+  'MUNRO':              [-34.5250,-58.5230],
+  'APER ITUZAINGO':     [-34.6580,-58.6680],
+  'FLORIDA':            [-34.6037,-58.3738],
+  'CABALLITO 1':        [-34.6170,-58.4406],
+  'CIUDADELA':          [-34.6290,-58.5350],
+  'BOEDO':              [-34.6284,-58.4183],
+  'CORRIENTES 1':       [-34.6037,-58.3983],
+  'GARIN':              [-34.4150,-58.7340],
+  'TIGRE':              [-34.4260,-58.5790],
+  'ZARATE':             [-34.0980,-59.0290],
+  'VICENTE LOPEZ':      [-34.5270,-58.4780],
+  'PACHECO 1':          [-34.4470,-58.6560],
+  // EXTREMAS
+  'APER MATADEROS':     [-34.6614,-58.5026],
+  'LAFERRERE':          [-34.7442,-58.5888],
+  'APER PALOMAR':       [-34.6070,-58.6010],
+  'CASEROS':            [-34.5983,-58.5638],
+  'ONCE':               [-34.6088,-58.4095],
+  'ADELINA':            [-34.5085,-58.5345],
+  'VILLA ADELINA':      [-34.5085,-58.5345],
+  'PILAR':              [-34.4585,-58.9135],
+  'PUEYRREDON':         [-34.5992,-58.4045],
+  'CABALLITO':          [-34.6172,-58.4400],
+  'FLORES 2':           [-34.6278,-58.4685],
+  'LINIERS':            [-34.6390,-58.5209],
+  'SAN ISIDRO':         [-34.4725,-58.5275],
+  'ALBERTI':            [-34.4855,-58.8755],
+  'TUCUMAN':            [-34.5998,-58.3810],
+  'MORON':              [-34.6526,-58.6202],
+  'SAN JUSTO':          [-34.6812,-58.5558],
+  'CROVARA':            [-34.6900,-58.5440],
+  'FLORES 1':           [-34.6275,-58.4627],
+  'PACHECO':            [-34.4475,-58.6555],
+  'JCP':                [-34.5142,-58.7616],
+  'EXTREMAS LANUS':     [-34.7050,-58.3970],
+  'GLEW':               [-34.8830,-58.3820],
+  'TEMPERLEY':          [-34.7782,-58.3988],
+  'TALAR':              [-34.4400,-58.6600],
+  'ROSARIO':            [-32.9442,-60.6505],
+  'MERLO':              [-34.6655,-58.7275],
+  'MORENO':             [-34.6502,-58.7885],
+  'CASTELAR':           [-34.6335,-58.6585],
+};
 
-        <div class="sheet-preview-card">
-          <div class="sheet-preview-head">
-            <div>
-              <span class="sheet-eyebrow">Google Sheets · Tareas Grupales</span>
-              <h3>Resumen</h3>
-              <p>La vista previa depende de que tengas acceso al documento con tu cuenta de Google.</p>
-            </div>
-            <div class="sheet-actions">
-              <button class="sheet-action-btn" type="button" id="reload-vacantes-preview">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-                Recargar
-              </button>
-              <a
-                class="sheet-action-btn primary"
-                href="https://docs.google.com/spreadsheets/d/1YhOjO2nACt7WLHuOF5JShQA-AUlYvmkdULdgi4MwPRM/edit?gid=1037172765#gid=1037172765"
-                target="_blank"
-                rel="noopener noreferrer">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-                Abrir hoja
-              </a>
-            </div>
-          </div>
+// ── Google Sheets CSV URL ──────────────────────────────────────────────────
+const SHEET_ID = '1YhOjO2nACt7WLHuOF5JShQA-AUlYvmkdULdgi4MwPRM';
+const RESUMEN_GID = '1037172765';
+const LOCAL_CSV = '../assets/data/vacantes-resumen.csv';
+const SHEET_EXPORT_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${RESUMEN_GID}`;
+const PUBLISHED_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYEbyNA4fgvrsucnsuE-AYqqWFC2N76-rQyCNulwEQBYMvOfWD3nCnY-75-abCTTAbmpPfUw3cipJC/pub?gid=1037172765&single=true&output=csv';
 
-          <div class="sheet-preview-frame-wrap">
-            <iframe
-              id="vacantes-sheet-preview"
-              title="Vista previa de la hoja Resumen"
-              src="https://docs.google.com/spreadsheets/d/1YhOjO2nACt7WLHuOF5JShQA-AUlYvmkdULdgi4MwPRM/preview?gid=1037172765&single=true&widget=false&headers=false"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-          </div>
+function setDataSource(text, level = 'ok') {
+  const badge = document.getElementById('dataSourceBadge');
+  if (!badge) return;
+  const dot = badge.querySelector('span');
+  badge.lastChild.textContent = ` ${text}`;
+  if (dot) {
+    dot.style.background = level === 'warn' ? '#F59E0B' : level === 'error' ? '#EF4444' : '#22C55E';
+  }
+}
 
-          <div class="sheet-preview-note">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-            Si Google no muestra la previsualización por permisos, usá “Abrir hoja”. No hace falta publicar el documento.
-          </div>
-        </div>
-      </section>
+function parseCSVRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let quoted = false;
 
-      <!-- CONFIRMACION -->
-      <section class="page" id="page-confirmacion" aria-labelledby="confirmacion-title" hidden>
-        <div class="section-header">
-          <h2 id="confirmacion-title">Confirmación de Envíos</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Registro de confirmación de envío de candidatos a sucursales.</p>
-        </div>
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    const next = text[i + 1];
 
-        <div class="jotform-card">
-          <div class="jotform-card-head">
-            <div>
-              <span class="sheet-eyebrow">Jotform · Registro operativo</span>
-              <h3>Formulario de confirmación</h3>
-              <p>Completá el registro desde el formulario embebido.</p>
-            </div>
-            <a
-              class="sheet-action-btn primary"
-              href="https://form.jotform.com/261625987368070"
-              target="_blank"
-              rel="noopener noreferrer">
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-              Abrir formulario
-            </a>
-          </div>
-          <div class="jotform-embed">
-            <script type="text/javascript" src="https://form.jotform.com/jsform/261625987368070"></script>
-          </div>
-        </div>
-      </section>
+    if (char === '"' && quoted && next === '"') {
+      cell += '"';
+      i += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      row.push(cell.trim());
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && next === '\n') i += 1;
+      row.push(cell.trim());
+      if (row.some(value => value !== '')) rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
 
-      <!-- INFORME ANUAL -->
-      <section class="page" id="page-informe" aria-labelledby="informe-title" hidden>
-        <div class="section-header">
-          <h2 id="informe-title">Informe Anual</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Cumplimiento semanal, altas, ausentismo y participación por capacitador.</p>
-        </div>
+  row.push(cell.trim());
+  if (row.some(value => value !== '')) rows.push(row);
+  return rows;
+}
 
-        <div class="z-filters" id="z-filters">
-          <div class="z-filter-group">
-            <span class="z-filter-label">Mes</span>
-            <button class="z-btn active all" type="button" data-z-mes="Todos" onclick="setMes('Todos')">Todos</button>
-            <button class="z-btn" type="button" data-z-mes="Enero" onclick="setMes('Enero')">Enero</button>
-            <button class="z-btn" type="button" data-z-mes="Febrero" onclick="setMes('Febrero')">Febrero</button>
-            <button class="z-btn" type="button" data-z-mes="Marzo" onclick="setMes('Marzo')">Marzo</button>
-            <button class="z-btn" type="button" data-z-mes="Abril" onclick="setMes('Abril')">Abril</button>
-          </div>
-          <div class="z-filter-group">
-            <span class="z-filter-label">Capacitador</span>
-            <button class="z-btn active all" type="button" data-z-cap="Todos" onclick="setCap('Todos')">Todos</button>
-            <button class="z-btn" type="button" data-z-cap="Agustina" onclick="setCap('Agustina')">Agustina</button>
-            <button class="z-btn" type="button" data-z-cap="Facundo" onclick="setCap('Facundo')">Facundo</button>
-            <button class="z-btn" type="button" data-z-cap="Emiliano" onclick="setCap('Emiliano')">Emiliano</button>
-            <button class="z-btn" type="button" data-z-cap="Agustin" onclick="setCap('Agustin')">Agustín</button>
-            <button class="z-btn" type="button" data-z-cap="Mariano" onclick="setCap('Mariano')">Mariano</button>
-          </div>
-        </div>
+// ── Parse CSV ──────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = parseCSVRows(text);
+  const sabores = [], extremas = [];
+  let section = null;
 
-        <div class="z-kpis" id="z-kpis"></div>
+  const parsePendientes = value => {
+    const clean = String(value || '').replace(/[^\d-]/g, '');
+    const parsed = parseInt(clean, 10);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
 
-        <section class="z-card">
-          <div class="z-card-head">
-            <div>
-              <div class="z-card-title">Cumplimiento semanal por capacitador</div>
-              <div class="z-card-sub">Promedio de enviados sobre total de vacantes</div>
-            </div>
-          </div>
-          <div class="z-chart-wrap z-chart-tall">
-            <canvas id="chartSemanal" role="img" aria-label="Cumplimiento semanal">Gráfico de cumplimiento semanal.</canvas>
-          </div>
-          <div id="legendSemanal" class="z-legend-row"></div>
-        </section>
+  const cleanLocal = value => String(value || '').toUpperCase().replace(/\s+/g, ' ').trim();
 
-        <section class="z-card">
-          <div class="z-card-head">
-            <div>
-              <div class="z-card-title">Evolución semanal</div>
-              <div class="z-card-sub" id="subtituloEvolucion">Enviados · Vacantes · Faltantes</div>
-            </div>
-          </div>
-          <div class="z-chart-wrap z-chart-tall">
-            <canvas id="chartEvolucion" role="img" aria-label="Evolución semanal">Gráfico de evolución semanal.</canvas>
-          </div>
-          <div id="legendEvolucion" class="z-legend-row centered"></div>
-        </section>
+  const isSkippableLocal = value => {
+    const local = cleanLocal(value);
+    return (
+      !local ||
+      local.includes('LOCAL') ||
+      local.includes(':-') ||
+      local.includes('▼') ||
+      local.includes('▶') ||
+      local.includes('TOTAL') ||
+      local.includes('CAPACITADOR') ||
+      local.includes('CONTADOR') ||
+      local.includes('PENDIENTES') ||
+      local.includes('CUBIERTAS') ||
+      local.includes('ACTUALIZADO') ||
+      local.includes('RESUMEN')
+    );
+  };
 
-        <div class="z-charts-grid">
-          <section class="z-card">
-            <div class="z-card-head">
-              <div>
-                <div class="z-card-title">Volumen mensual de altas</div>
-                <div class="z-card-sub">Ingresos confirmados por mes</div>
-              </div>
-            </div>
-            <div class="z-chart-wrap">
-              <canvas id="chartMensual" role="img" aria-label="Volumen mensual">Gráfico de volumen mensual.</canvas>
-            </div>
-            <div id="legendMensual" class="z-legend-row"></div>
-          </section>
+  for (const row of rows) {
+    const first = cleanLocal(row[0]);
+    const rightLocal = cleanLocal(row[10]);
 
-          <section class="z-card">
-            <div class="z-card-head">
-              <div>
-                <div class="z-card-title">Participación en envíos</div>
-                <div class="z-card-sub">Distribución por capacitador</div>
-              </div>
-            </div>
-            <div class="z-chart-wrap">
-              <canvas id="chartDona" role="img" aria-label="Participación en envíos por capacitador">Gráfico de dona por capacitador.</canvas>
-            </div>
-            <div id="legendDona" class="z-legend-row centered"></div>
-          </section>
-        </div>
+    if (first.includes('RESUMEN POR CAPACITADOR') || first === 'CAPACITADOR') {
+      break;
+    }
 
-        <div class="z-charts-grid z-charts-grid-compact">
-          <section class="z-card">
-            <div class="z-card-head">
-              <div>
-                <div class="z-card-title">Distribución por marca</div>
-                <div class="z-card-sub">Extremas vs Sabores</div>
-              </div>
-            </div>
-            <div class="z-chart-wrap z-chart-small">
-              <canvas id="chartMarca" role="img" aria-label="Distribución por marca">Gráfico de torta por marca.</canvas>
-            </div>
-            <div id="legendMarca" class="z-legend-row centered"></div>
-          </section>
+    // Detectar encabezado de sección
+    if (first.includes('SABORES') || first.includes('🥐')) { section = 'sabores'; continue; }
+    if (first.includes('HAMBURGUESAS') || first.includes('EXTREMAS') || first.includes('🍔')) { section = 'extremas'; continue; }
 
-          <section class="z-card">
-            <div class="z-card-head">
-              <div>
-                <div class="z-card-title">Ranking de capacitadores</div>
-                <div class="z-card-sub">Ordenado por cumplimiento general</div>
-              </div>
-            </div>
-            <div class="z-ranking" id="z-ranking"></div>
-          </section>
-        </div>
-      </section>
+    // Formato real de Resumen: Sabores a la izquierda, Extremas a la derecha.
+    if (row.length >= 13) {
+      const leftPendientes = parsePendientes(row[2]);
+      const rightPendientes = parsePendientes(row[12]);
 
-      <!-- ZONALES -->
-      <section class="page" id="page-zonales" aria-labelledby="zonales-title" hidden>
-        <div class="section-header">
-          <h2 id="zonales-title">Zonales</h2>
-          <div class="section-divider"></div>
-          <p class="section-sub">Buscador de gerentes zonales y capacitador asignado.</p>
-        </div>
+      if (!isSkippableLocal(first) && leftPendientes > 0) {
+        sabores.push({ n: first, p: leftPendientes });
+      }
 
-        <div class="zonales-search-card" aria-label="Consulta de zonales">
-          <div class="zonales-search-row">
-            <label class="zonal-search-field">
-              <span>Buscar por nombre</span>
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              <input id="zonal-search" type="search" placeholder="Ej: Mayra, Camila, Ronaldo..." autocomplete="off">
-            </label>
-            <div class="zonal-filter-group" aria-label="Filtros de capacitador">
-              <button class="zonal-filter active" type="button" data-zonal-filter="todos">Todos</button>
-              <button class="zonal-filter" type="button" data-zonal-filter="Mariano">Mariano</button>
-              <button class="zonal-filter" type="button" data-zonal-filter="Agustina">Agustina</button>
-              <button class="zonal-filter" type="button" data-zonal-filter="Agustín">Agustín</button>
-            </div>
-          </div>
+      if (!isSkippableLocal(rightLocal) && rightPendientes > 0) {
+        extremas.push({ n: rightLocal, p: rightPendientes });
+      }
 
-          <div class="zonal-brand-filters" aria-label="Filtro por marca">
-            <button class="zonal-brand active" type="button" data-brand-filter="todos">Todas las marcas</button>
-            <button class="zonal-brand" type="button" data-brand-filter="Extremas">Extremas</button>
-            <button class="zonal-brand" type="button" data-brand-filter="Sabores Express">Sabores Express</button>
-          </div>
-        </div>
+      continue;
+    }
 
-        <div class="zonales-overview" id="zonales-overview" aria-live="polite"></div>
+    if (isSkippableLocal(first)) continue;
 
-        <div class="zonales-results-layout">
-          <div class="zonales-results-panel">
-            <div class="zonales-panel-head">
-              <div>
-                <strong>Resultados</strong>
-                <span id="zonales-result-count">Cargando datos...</span>
-              </div>
-            </div>
-            <div class="zonales-results" id="zonales-results" aria-live="polite"></div>
-          </div>
+    const pendientes = parsePendientes(row[2]);
+    if (pendientes <= 0) continue;
+    const entry = { n: first, p: pendientes };
+    if (section === 'extremas') extremas.push(entry);
+    else sabores.push(entry);
+  }
+  return { sabores, extremas };
+}
 
-          <aside class="zonales-side-panel">
-            <div class="zonal-summary-card">
-              <span class="summary-eyebrow">Vista rápida</span>
-              <strong id="zonal-total-count">—</strong>
-              <small>Zonales cargados</small>
-            </div>
-            <div class="zonal-breakdown" id="zonal-breakdown"></div>
-          </aside>
-        </div>
-      </section>
+// ── Map setup ──────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true, preferCanvas: true })
+  .setView([-34.62, -58.58], 10);
 
-    </main>
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+  maxZoom: 18
+}).addTo(map);
 
-    <footer class="main-footer">
-      <svg class="footer-logo-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Equipo de Selección y RRHH · Sabores Express y Hamburguesas Extremas
-    </footer>
+let heatLayer = null;
+let markerGroup = L.layerGroup().addTo(map);
+let allData = { sabores: [], extremas: [] };
 
-  </div><!-- end main-wrapper -->
+function renderMap(sabores, extremas) {
+  if (heatLayer) map.removeLayer(heatLayer);
+  markerGroup.clearLayers();
 
-  <script src="assets/data/zonales-data.js"></script>
-  <script src="app.js"></script>
-  <script src="assets/data/informe-anual-app.js"></script>
+  const combined = [
+    ...sabores.map(d => ({...d, marca:'sabores'})),
+    ...extremas.map(d => ({...d, marca:'extremas'}))
+  ].filter(d => COORDS[d.n]);
+
+  const totalVac = combined.reduce((a,b) => a+b.p, 0);
+  document.getElementById('sVac').textContent = totalVac;
+  document.getElementById('sLoc').textContent = combined.length;
+  document.getElementById('sSab').textContent = sabores.reduce((a,b)=>a+b.p,0);
+  document.getElementById('sExt').textContent = extremas.reduce((a,b)=>a+b.p,0);
+
+  if (!combined.length) return;
+
+  const maxP = Math.max(...combined.map(d => d.p));
+  const heatPts = combined.map(d => {
+    const [lat,lng] = COORDS[d.n];
+    return [lat, lng, d.p / maxP];
+  });
+
+  if (typeof L.heatLayer === 'function') {
+    heatLayer = L.heatLayer(heatPts, {
+      radius: 38, blur: 28, maxZoom: 14, max: 1.0,
+      gradient: { 0.0:'#dbeafe', 0.25:'#93c5fd', 0.5:'#3b82f6', 0.75:'#1d4ed8', 1.0:'#7c1d1d' }
+    }).addTo(map);
+  } else {
+    console.warn('leaflet-heat no está disponible. Se muestran marcadores sin capa de calor.');
+  }
+
+  combined.forEach(d => {
+    const [lat, lng] = COORDS[d.n];
+    const isSab = d.marca === 'sabores';
+    const isCrit = d.p >= 5;
+    const r = Math.min(6 + d.p * 1.6, 20);
+    const col = isSab ? '#1d4ed8' : '#ea580c';
+    const border = isCrit ? '#dc2626' : '#fff';
+    const marcaLabel = isSab ? 'Sabores Express' : 'Hamburguesas Extremas';
+    const urgLabel = d.p >= 10 ? '🔴 Crítico' : d.p >= 5 ? '🟠 Urgente' : '🟡 Normal';
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:${r*2}px;height:${r*2}px;border-radius:50%;
+        background:${col};border:2px solid ${border};
+        display:flex;align-items:center;justify-content:center;
+        font-size:${r>9?9:7}px;font-weight:700;color:#fff;
+        box-shadow:0 2px 6px rgba(0,0,0,.3);
+      ">${d.p}</div>`,
+      iconSize: [r*2, r*2], iconAnchor: [r, r]
+    });
+
+    L.marker([lat, lng], { icon })
+      .bindPopup(`
+        <b style="font-size:13px">${d.n}</b><br>
+        <span style="font-size:11px;color:#555">${marcaLabel}</span><br>
+        <span style="font-size:15px;font-weight:700;color:#dc2626">${d.p} vacante${d.p>1?'s':''} pendiente${d.p>1?'s':''}</span><br>
+        <span style="font-size:11px">${urgLabel}</span>
+      `, { maxWidth: 200 })
+      .addTo(markerGroup);
+  });
+}
+
+// ── Filtros ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.pill').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.f;
+    let sab = allData.sabores, ext = allData.extremas;
+    if (f === 'sabores')  { ext = []; }
+    if (f === 'extremas') { sab = []; }
+    if (f === 'criticas') {
+      sab = allData.sabores.filter(d => d.p >= 5);
+      ext = allData.extremas.filter(d => d.p >= 5);
+    }
+    renderMap(sab, ext);
+  });
+});
+
+const FALLBACK_DATA = {
+  sabores: [
+    {n:'SAAVEDRA',p:3},{n:'SANTA FE',p:2},{n:'APER MARTINEZ',p:2},
+    {n:'TRISTAN SUAREZ',p:2},{n:'ESCOBAR',p:2},{n:'LINIERS 1',p:2},
+    {n:'OLIVOS',p:2},{n:'LAVALLE 1',p:2},{n:'PACHECO 2',p:2},
+    {n:'BELGRANO',p:2},{n:'CORRIENTES 4',p:2},{n:'BALLESTER 2',p:2},
+    {n:'PELLEGRINI',p:2},{n:'URQUIZA',p:2},{n:'CORRIENTES 3',p:2},
+    {n:'SAN ISIDRO 2',p:2},{n:'SAN ISIDRO 1',p:2},{n:'BOULOGNE',p:2},
+    {n:'APER CONSTITUCION',p:1},{n:'LOMA HERMOSA',p:1},{n:'POMPEYA',p:1},
+    {n:'VIRREYES',p:1},{n:'QUILMES 1',p:1},{n:'TAPIALES',p:1},
+    {n:'FLORIDA',p:1},{n:'BOEDO',p:1},{n:'CORRIENTES 1',p:1},
+    {n:'GARIN',p:1},{n:'TIGRE',p:1},{n:'VICENTE LOPEZ',p:1},
+  ],
+  extremas: [
+    {n:'APER MATADEROS',p:15},{n:'OLIVOS',p:5},{n:'LAFERRERE',p:4},
+    {n:'APER PALOMAR',p:4},{n:'CASEROS',p:4},{n:'BOULOGNE',p:3},
+    {n:'SAN FERNANDO',p:3},{n:'ONCE',p:3},{n:'ADELINA',p:3},
+    {n:'PILAR',p:2},{n:'PUEYRREDON',p:2},{n:'GARIN',p:2},
+    {n:'CABALLITO',p:2},{n:'FLORES 2',p:2},{n:'LINIERS',p:2},
+    {n:'VIRREYES',p:2},{n:'SAN ISIDRO',p:2},{n:'MUNRO',p:1},
+    {n:'PELLEGRINI',p:1},{n:'FLORIDA',p:1},{n:'MORON',p:1},
+    {n:'SAN JUSTO',p:1},{n:'CROVARA',p:1},{n:'FLORES 1',p:1},
+    {n:'PACHECO',p:1},
+  ]
+};
+
+function hasUsableData(data) {
+  return data.sabores.length || data.extremas.length;
+}
+
+function finishLoading() {
+  const loading = document.getElementById('loading');
+  if (loading) loading.style.display = 'none';
+  requestAnimationFrame(() => map.invalidateSize());
+}
+
+async function fetchCSV(url) {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const text = await response.text();
+  if (/<!doctype html|<html|ServiceLogin|accounts\.google/i.test(text)) {
+    throw new Error('Google devolvió HTML en lugar de CSV');
+  }
+  const parsed = parseCSV(text);
+  if (!hasUsableData(parsed)) throw new Error('CSV sin datos utilizables');
+  return parsed;
+}
+
+async function loadHeatmapData() {
+  const embeddedCSV = window.VACANTES_RESUMEN_CSV;
+
+  try {
+    if (embeddedCSV) {
+      allData = parseCSV(embeddedCSV);
+      if (hasUsableData(allData)) {
+        setDataSource('CSV local embebido');
+        renderMap(allData.sabores, allData.extremas);
+        return;
+      }
+    }
+
+    try {
+      allData = await fetchCSV(LOCAL_CSV);
+      setDataSource('CSV local del repositorio');
+    } catch (localError) {
+      try {
+        allData = await fetchCSV(SHEET_EXPORT_CSV);
+        setDataSource('En vivo desde hoja Resumen');
+      } catch (primaryError) {
+        try {
+          allData = await fetchCSV(PUBLISHED_CSV);
+          setDataSource('En vivo desde CSV publicado', 'warn');
+          console.warn('No se pudo leer CSV local ni export directo:', { localError, primaryError });
+        } catch (publishedError) {
+          allData = FALLBACK_DATA;
+          setDataSource('Datos fallback locales', 'error');
+          console.warn('No se pudo leer ninguna fuente CSV:', { localError, primaryError, publishedError });
+        }
+      }
+    }
+
+    renderMap(allData.sabores, allData.extremas);
+  } catch (error) {
+    allData = FALLBACK_DATA;
+    setDataSource('Datos fallback locales', 'error');
+    console.error('No se pudo renderizar el mapa:', error);
+    renderMap(allData.sabores, allData.extremas);
+  } finally {
+    finishLoading();
+  }
+}
+
+loadHeatmapData();
+
+</script>
 </body>
 </html>
