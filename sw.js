@@ -1,4 +1,4 @@
-const CACHE_NAME = 'las-tortuguitas-ninja-v5';
+const CACHE_NAME = 'las-tortuguitas-ninja-v7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   './assets/icons/turtle-circle-logo-512.png',
   './assets/data/zonales-data.js',
   './assets/data/vacantes-resumen.csv',
+  './assets/data/resumen-vacantes.csv',
   './assets/data/vacantes-resumen-data.js',
   './assets/data/README-vacantes.md'
 ];
