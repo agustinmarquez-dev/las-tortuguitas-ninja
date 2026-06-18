@@ -351,12 +351,73 @@ const COORDS = {
   'MERLO':              [-34.6655,-58.7275],
   'MORENO':             [-34.6502,-58.7885],
   'CASTELAR':           [-34.6335,-58.6585],
+  'CHILAVERT':          [-34.5740,-58.5530],
+  'SAN MIGUEL':         [-34.5429,-58.7120],
+  'GRAND BOURG':        [-34.4819,-58.7302],
+  'DEL VISO':           [-34.4516,-58.8074],
+  'RAMOS':              [-34.6403,-58.5638],
+  'RODRIGUEZ':          [-34.6084,-58.9520],
+  'ENTRE RIOS':         [-34.6180,-58.3910],
+  'CASTILLO':           [-34.7167,-58.6250],
+  'LUJAN':              [-34.5703,-59.1050],
+  'BARRACAS':           [-34.6450,-58.3830],
+  'BANFIELD':           [-34.7446,-58.3954],
+  'RETIRO':             [-34.5910,-58.3742],
+  'W. MORRIS':          [-34.5860,-58.6710],
+  'LOMAS':              [-34.7607,-58.3994],
+  'VARELA':             [-34.8173,-58.2761],
+  'BERAZATEGUI':        [-34.7642,-58.2119],
+  'WILDE':              [-34.7001,-58.3181],
+  'MONTE':              [-34.8150,-58.4700],
+  'EZEIZA':             [-34.8535,-58.5225],
+  'MDQ':                [-38.0055,-57.5426],
+  'PADUA':              [-34.6657,-58.7009],
+  'SOURDEAUX':          [-34.5268,-58.6826],
+  'HAEDO':              [-34.6443,-58.5937],
 };
+
+const COORD_ALIASES = {
+  'LANUS 1 / 3': 'EXTREMAS LANUS',
+  'LANUS 1': 'EXTREMAS LANUS',
+  'MERLO 1': 'MERLO',
+  'MERLO 2': 'MERLO',
+  'MERLO 3': 'MERLO',
+  'MORENO 1': 'MORENO',
+  'MORON 2': 'MORON',
+  'MORON 3': 'MORON',
+  'CORRIENTES 2': 'CORRIENTES 1',
+  'RAMOS 1': 'RAMOS',
+  'RAMOS 2': 'RAMOS',
+  'RAMOS 3': 'RAMOS',
+  'LOMAS 3': 'LOMAS',
+  'LOMAS 4': 'LOMAS',
+  'VARELA 2': 'VARELA',
+  'BERAZATEGUI 2': 'BERAZATEGUI',
+  'MONTE 1': 'MONTE',
+  'MONTE 2': 'MONTE',
+  'MDQ 1': 'MDQ',
+  'MDQ 2': 'MDQ',
+  'MDQ 3': 'MDQ',
+  'MDQ 5': 'MDQ',
+  'APER RETIRO': 'RETIRO',
+  'BALLESTER 1': 'BALLESTER 2',
+  'LAFERRERE 1': 'LAFERRERE',
+  'LINIERS 2': 'LINIERS',
+};
+
+function getCoords(localName) {
+  const local = String(localName || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  const alias = COORD_ALIASES[local];
+  return COORDS[local] || (alias ? COORDS[alias] : null);
+}
 
 // ── Google Sheets CSV URL ──────────────────────────────────────────────────
 const SHEET_ID = '1YhOjO2nACt7WLHuOF5JShQA-AUlYvmkdULdgi4MwPRM';
 const RESUMEN_GID = '1037172765';
-const LOCAL_CSV = '../assets/data/vacantes-resumen.csv';
+const LOCAL_CSV_FILES = [
+  '../assets/data/vacantes-resumen.csv',
+  '../assets/data/resumen-vacantes.csv',
+];
 const SHEET_EXPORT_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${RESUMEN_GID}`;
 const PUBLISHED_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQYEbyNA4fgvrsucnsuE-AYqqWFC2N76-rQyCNulwEQBYMvOfWD3nCnY-75-abCTTAbmpPfUw3cipJC/pub?gid=1037172765&single=true&output=csv';
 
@@ -492,22 +553,30 @@ function renderMap(sabores, extremas) {
   if (heatLayer) map.removeLayer(heatLayer);
   markerGroup.clearLayers();
 
-  const combined = [
+  const rawCombined = [
     ...sabores.map(d => ({...d, marca:'sabores'})),
     ...extremas.map(d => ({...d, marca:'extremas'}))
-  ].filter(d => COORDS[d.n]);
+  ];
+  const combined = rawCombined
+    .map(d => ({ ...d, coords: getCoords(d.n) }))
+    .filter(d => d.coords);
+  const missingCoords = rawCombined.filter(d => !getCoords(d.n));
 
-  const totalVac = combined.reduce((a,b) => a+b.p, 0);
+  const totalVac = rawCombined.reduce((a,b) => a+b.p, 0);
   document.getElementById('sVac').textContent = totalVac;
-  document.getElementById('sLoc').textContent = combined.length;
+  document.getElementById('sLoc').textContent = rawCombined.length;
   document.getElementById('sSab').textContent = sabores.reduce((a,b)=>a+b.p,0);
   document.getElementById('sExt').textContent = extremas.reduce((a,b)=>a+b.p,0);
+
+  if (missingCoords.length) {
+    console.warn('Locales sin coordenadas en el mapa:', missingCoords);
+  }
 
   if (!combined.length) return;
 
   const maxP = Math.max(...combined.map(d => d.p));
   const heatPts = combined.map(d => {
-    const [lat,lng] = COORDS[d.n];
+    const [lat,lng] = d.coords;
     return [lat, lng, d.p / maxP];
   });
 
@@ -521,7 +590,7 @@ function renderMap(sabores, extremas) {
   }
 
   combined.forEach(d => {
-    const [lat, lng] = COORDS[d.n];
+    const [lat, lng] = d.coords;
     const isSab = d.marca === 'sabores';
     const isCrit = d.p >= 5;
     const r = Math.min(6 + d.p * 1.6, 20);
@@ -618,21 +687,43 @@ async function fetchCSV(url) {
   return parsed;
 }
 
-async function loadHeatmapData() {
+async function fetchLocalCSV() {
+  const errors = [];
+  for (const url of LOCAL_CSV_FILES) {
+    try {
+      return await fetchCSV(url);
+    } catch (error) {
+      errors.push({ url, error });
+    }
+  }
+  throw new Error(`No se pudo leer CSV local: ${errors.map(item => `${item.url} (${item.error.message})`).join(', ')}`);
+}
+
+function loadEmbeddedCSV() {
   const embeddedCSV = window.VACANTES_RESUMEN_CSV;
+  if (!embeddedCSV) throw new Error('No hay CSV embebido disponible');
+  const parsed = parseCSV(embeddedCSV);
+  if (!hasUsableData(parsed)) throw new Error('CSV embebido sin datos utilizables');
+  return parsed;
+}
+
+async function loadHeatmapData() {
+  const isFileProtocol = window.location.protocol === 'file:';
 
   try {
-    if (embeddedCSV) {
-      allData = parseCSV(embeddedCSV);
-      if (hasUsableData(allData)) {
+    if (isFileProtocol) {
+      try {
+        allData = loadEmbeddedCSV();
         setDataSource('CSV local embebido');
         renderMap(allData.sabores, allData.extremas);
         return;
+      } catch (embeddedError) {
+        console.warn('No se pudo leer el CSV embebido:', embeddedError);
       }
     }
 
     try {
-      allData = await fetchCSV(LOCAL_CSV);
+      allData = await fetchLocalCSV();
       setDataSource('CSV local del repositorio');
     } catch (localError) {
       try {
@@ -644,9 +735,15 @@ async function loadHeatmapData() {
           setDataSource('En vivo desde CSV publicado', 'warn');
           console.warn('No se pudo leer CSV local ni export directo:', { localError, primaryError });
         } catch (publishedError) {
-          allData = FALLBACK_DATA;
-          setDataSource('Datos fallback locales', 'error');
-          console.warn('No se pudo leer ninguna fuente CSV:', { localError, primaryError, publishedError });
+          try {
+            allData = loadEmbeddedCSV();
+            setDataSource('CSV local embebido', 'warn');
+            console.warn('No se pudo leer ninguna fuente remota; se usa CSV embebido:', { localError, primaryError, publishedError });
+          } catch (embeddedError) {
+            allData = FALLBACK_DATA;
+            setDataSource('Datos fallback locales', 'error');
+            console.warn('No se pudo leer ninguna fuente CSV:', { localError, primaryError, publishedError, embeddedError });
+          }
         }
       }
     }
