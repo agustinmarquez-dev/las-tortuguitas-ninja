@@ -1,23 +1,30 @@
 # Vacantes Resumen
 
 El mapa de calor lee primero `vacantes-resumen.csv`.
+Tambien acepta `resumen-vacantes.csv`, pero el flujo recomendado es regenerar siempre el archivo embebido.
 
 ## Actualizacion semanal
 
-1. Exportar o copiar la hoja `Resumen` como CSV.
-2. Reemplazar `assets/data/vacantes-resumen.csv`.
-3. Ejecutar desde la raiz del proyecto:
+1. Descargar la hoja `Resumen` como CSV.
+2. Ejecutar desde la raiz del proyecto, indicando el archivo descargado:
+
+```bash
+npm run actualizar-vacantes -- ~/Downloads/resumen-vacantes.csv
+```
+
+Ese comando copia el CSV a `assets/data/vacantes-resumen.csv` y regenera `assets/data/vacantes-resumen-data.js`, que permite que el mapa funcione tambien al abrirlo localmente con `file://`.
+
+Tambien se puede usar sin parametro si ya reemplazaste manualmente `assets/data/vacantes-resumen.csv`.
+Si reemplazaste `assets/data/resumen-vacantes.csv`, el script lo copia al nombre esperado:
 
 ```bash
 npm run actualizar-vacantes
 ```
 
-Ese comando regenera `assets/data/vacantes-resumen-data.js`, que permite que el mapa funcione tambien al abrirlo localmente con `file://`.
-
-4. Subir a GitHub:
+3. Subir a GitHub:
 
 ```bash
-git add assets/data/vacantes-resumen.csv assets/data/vacantes-resumen-data.js
+git add assets/data/vacantes-resumen.csv assets/data/vacantes-resumen-data.js assets/data/resumen-vacantes.csv
 git commit -m "Actualizar vacantes resumen"
 git push
 ```
